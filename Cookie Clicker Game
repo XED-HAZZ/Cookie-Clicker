@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Clicker</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #ece5dd;
+            display: flex;
+            height: 100vh;
+        }
+
+        .main {
+            flex: 1;
+            text-align: center;
+        }
+
+        .header {
+            background: #d92525;
+            color: white;
+            padding: 20px;
+            font-size: 50px;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #d92525;
+            margin-top: 100px;
+            font-size: 70px;
+        }
+
+        #cookieCount {
+            font-size: 40px;
+            margin: 20px;
+            font-weight: bold;
+        }
+
+        #stats {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+
+        button.cookie-btn {
+            background: #f08a00;
+            color: white;
+            border: none;
+            padding: 30px 60px;
+            font-size: 40px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+            button.cookie-btn:hover {
+                transform: scale(1.05);
+            }
+
+        .submit-score-btn {
+            margin-top: 15px;
+            padding: 12px 20px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            background: #d92525;
+            color: white;
+            cursor: pointer;
+        }
+
+        .shop {
+            width: 350px;
+            background: white;
+            border-left: 4px solid #d92525;
+            padding: 20px;
+            overflow-y: auto;
+            height: 100vh;
+        }
+
+            .shop h2 {
+                color: #d92525;
+                text-align: center;
+            }
+
+        .upgrade {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+        }
+
+            .upgrade button {
+                width: 100%;
+                padding: 10px;
+                background: #d92525;
+                color: white;
+                border: none;
+                cursor: pointer;
+                border-radius: 8px;
+            }
+
+        #adminBtn {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            width: 45px;
+            height: 45px;
+            border: none;
+            border-radius: 50%;
+            background: #d92525;
+            color: white;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        #leaderboardPanel {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            width: 260px;
+            background: white;
+            border: 3px solid #d92525;
+            border-radius: 10px;
+            padding: 10px;
+            display: none;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+            #leaderboardPanel h3 {
+                text-align: center;
+                color: #d92525;
+            }
+    </style>
+</head>
+
+<body>
+
+    <div class="main">
+        <div class="header">cookie clicker</div>
+        <h1>FUN COOKIE CLICKER</h1>
+
+        <div id="cookieCount">Cookies: 0</div>
+
+        <div id="stats">
+            Cookies per click: <span id="cpc">1</span> |
+            Cookies per second: <span id="cps">0</span>
+        </div>
+
+        <button class="cookie-btn" onclick="clickCookie()">🍪 Click</button>
+
+        <br>
+
+        <button class="submit-score-btn" onclick="submitScore()">🏆 Submit Score & Reset</button>
+        <button class="submit-score-btn" onclick="toggleLeaderboard()">📊 Leaderboard</button>
+    </div>
+
+    <div class="shop">
+        <h2>🛒 Shop</h2>
+        <div id="shopItems"></div>
+    </div>
+
+    <button id="adminBtn" onclick="openCodeMenu()">⚙</button>
+
+    <div id="leaderboardPanel">
+        <h3>🏆 Leaderboard</h3>
+        <div id="leaderboardList"></div>
+    </div>
+
+    <script>
+        let cookies = 0;
+        let perClick = 1;
+        let perSecond = 0;
+
+        // ✅ FIXED: Proper load from localStorage
+        let leaderboard = JSON.parse(localStorage.getItem("leaderboard")) || [];
+
+        const upgrades = [
+        {name:"+1 Per Click", cost:25, click:1, sec:0},
+        {name:"+3 Per Click", cost:60, click:3, sec:0},
+        {name:"+5 Per Click", cost:120, click:5, sec:0},
+        {name:"+1/sec Cursor", cost:50, click:0, sec:1},
+        {name:"+3/sec Grandma", cost:150, click:0, sec:3},
+        {name:"+5/sec Oven", cost:300, click:0, sec:5},
+        {name:"+10/sec Bakery", cost:750, click:0, sec:10},
+        {name:"+25/sec Farm", cost:1500, click:0, sec:25},
+        {name:"+50/sec Factory", cost:5000, click:0, sec:50},
+        {name:"+100/sec Mine", cost:10000, click:0, sec:100},
+        {name:"+250/sec Lab", cost:25000, click:0, sec:250},
+        {name:"+500/sec Portal", cost:50000, click:0, sec:500},
+        {name:"+1000/sec Time Machine", cost:100000, click:0, sec:1000},
+        {name:"+2500/sec Cookie City", cost:250000, click:0, sec:2500},
+        {name:"+5000/sec Cookie Nation", cost:500000, click:0, sec:5000},
+        {name:"+10000/sec Cookie World", cost:1000000, click:0, sec:10000},
+        {name:"+25000/sec Cookie Galaxy", cost:2500000, click:0, sec:25000},
+        {name:"+50000/sec Cookie Universe", cost:5000000, click:0, sec:50000},
+        {name:"+100000/sec Cookie Empire", cost:7500000, click:0, sec:100000},
+        {name:"+250000/sec Cookie God", cost:10000000, click:0, sec:250000}
+        ];
+
+        function createShop() {
+        let html = "";
+        upgrades.forEach((u, i) => {
+        html += `
+        <div class="upgrade">
+        <p>${u.name} (Cost: <span id="cost${i}">${u.cost}</span>)</p>
+        <button onclick="buyUpgrade(${i})">Buy</button>
+        </div>
+        `;
+        });
+        document.getElementById("shopItems").innerHTML = html;
+        }
+
+        function updateDisplay() {
+        document.getElementById("cookieCount").innerText =
+        "Cookies: " + Math.floor(cookies);
+
+        document.getElementById("cpc").innerText = perClick;
+        document.getElementById("cps").innerText = perSecond;
+
+        upgrades.forEach((u, i) => {
+        document.getElementById("cost" + i).innerText = Math.floor(u.cost);
+        });
+        }
+
+        function clickCookie() {
+        cookies += perClick;
+        updateDisplay();
+        }
+
+        function buyUpgrade(index) {
+        let u = upgrades[index];
+
+        if (cookies >= u.cost) {
+        cookies -= u.cost;
+        perClick += u.click;
+        perSecond += u.sec;
+        u.cost = Math.floor(u.cost * 1.4);
+        updateDisplay();
+        }
+        }
+
+        function openCodeMenu() {
+        let code = prompt("Enter code:");
+
+        if (code === "021225") {
+        let newCookies = prompt("Set cookies:", cookies);
+        let newClick = prompt("Set cookies per click:", perClick);
+        let newSecond = prompt("Set cookies per second:", perSecond);
+
+        if (newCookies !== null) cookies = Number(newCookies);
+        if (newClick !== null) perClick = Number(newClick);
+        if (newSecond !== null) perSecond = Number(newSecond);
+
+        updateDisplay();
+        } else {
+        alert("Wrong code!");
+        }
+        }
+
+        // ✅ FIXED: Save + load properly every time
+        function submitScore() {
+        let name = prompt("Enter your name. Everything will reset.");
+
+        if (name && name.trim() !== "") {
+
+        leaderboard.push({
+        name: name,
+        score: Math.floor(cookies)
+        });
+
+        leaderboard.sort((a, b) => b.score - a.score);
+
+        // 💾 SAVE HERE
+        localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+
+        updateLeaderboard();
+        resetGame();
+        }
+        }
+
+        function updateLeaderboard() {
+        let html = "";
+
+        leaderboard.forEach((p, i) => {
+        html += `<p>${i + 1}. ${p.name} - ${p.score} 🍪</p>`;
+        });
+
+        document.getElementById("leaderboardList").innerHTML = html;
+
+        // 💾 KEEP SAVED ALWAYS
+        localStorage.setItem("leaderboard", JSON.stringify(leaderboard));
+        }
+
+        function toggleLeaderboard() {
+        let panel = document.getElementById("leaderboardPanel");
+
+        panel.style.display = (panel.style.display === "block") ? "none" : "block";
+        }
+
+        function resetGame() {
+        cookies = 0;
+        perClick = 1;
+        perSecond = 0;
+
+        upgrades.forEach(u => {
+        u.cost = Math.floor(u.cost / 1.4);
+        });
+
+        updateDisplay();
+        }
+
+        // ✅ LOAD ON START (FIXED)
+        window.onload = () => {
+        updateLeaderboard();
+        };
+
+        setInterval(() => {
+        cookies += perSecond;
+        updateDisplay();
+        }, 1000);
+
+        createShop();
+        updateDisplay();
+    </script>
+
+</body>
+</html>
